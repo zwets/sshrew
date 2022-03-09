@@ -5,6 +5,20 @@ a roaming client to a remote server.  Once the session runs, the client
 can be ssh'd to from the server.
 
 
+### Server side
+
+Create the eety user and restrict its home
+
+    sudo adduser --system --shell /bin/sh --home /var/lib/eety --gecos "Eety Server" eety
+    sudo -u eety chmod 0750 /var/lib/eety
+
+Set up SSH login with the client's public key (see above)
+
+    sudo -u eety mkdir /var/lib/eety/.ssh
+    sudo -u eety chmod 0700 /var/lib/eety/.ssh
+    sudo -u eety touch /var/lib/eety/.ssh/authorized_keys
+    sudo -u eety chmod 0600 /var/lib/eety/.ssh/authorized_keys
+
 ### Client (roaming) side
 
 Make sure the client doesn't power down the WiFi.
@@ -12,7 +26,7 @@ Make sure the client doesn't power down the WiFi.
     # /etc/NetworkManager/conf.d/default-wifi-powersave-on.conf
     wifi.powersave = 2
 
-Edit the `ssh.conf` file, replacing
+Edit the `client/ssh.conf` file, replacing
 
  * `{SERVER_HOST}`: the public name of the remote SSH server
  * `{SERVER_PORT}`: the port the remote SSH is listening on (normally `22`)
@@ -35,21 +49,12 @@ Echo the public key so you can copy it on the server (see below)
 
     sudo cat /usr/local/lib/eety/keys/id_eety.pub
 
+### Server side 
 
-### Server side
+Append the public key to the eety user's authorised keys:
 
-Create the eety user and restrict its home
-
-    sudo adduser --system --shell /bin/sh --home /var/lib/eety --gecos "Eety Server" eety
-    sudo -u eety chmod 0750 /var/lib/eety
-
-Set up SSH login with the client's public key (see above)
-
-    sudo -u eety mkdir /var/lib/eety/.ssh
-    sudo -u eety chmod 0700 /var/lib/eety/.ssh
-    sudo -u eety tee -a /var/lib/eety/.ssh/authorized_keys      # Here paste the key
-    sudo -u eety chmod 0600 /var/lib/eety/.ssh/authorized_keys
-
+    echo "PUT THE KEY HERE" |
+    sudo -u eety tee -a /var/lib/eety/.ssh/authorized_keys
 
 ### Client side
 
@@ -58,7 +63,7 @@ Once the above is done, we test access from the client.
     sudo ssh -F /usr/local/lib/eety/ssh.conf remotehost
 
 This should give `sh: 1: /var/lib/eety/eety-home.sh: not found`,
-which (in this case) is good.  We now `scp` that script to the server:
+which is good.  We now `scp` that script to the server:
 
     sudo scp -F /usr/local/lib/eety/ssh.conf server/eety-home.sh remotehost:
 
@@ -70,7 +75,6 @@ Now install and enable the service.
 
     sudo systemctl enable eety.service
     sudo systemctl start eety.service
-
 
 ### Server Side
 
