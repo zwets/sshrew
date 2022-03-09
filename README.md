@@ -67,10 +67,10 @@ Once the above is done, we test access from the client.
 
     sudo ssh -F /usr/local/lib/sshrew/ssh.conf remotehost
 
-This should give `sh: 1: /var/lib/sshrew/sshrew-home.sh: not found`,
+This should give `sh: 1: /var/lib/sshrew/entrypoint.sh: not found`,
 which is good.  We now `scp` that script to the server:
 
-    sudo scp -F /usr/local/lib/sshrew/ssh.conf server/sshrew-home.sh remotehost:
+    sudo scp -F /usr/local/lib/sshrew/ssh.conf server/entrypoint.sh remotehost:
 
 Now install and enable the service.
 
