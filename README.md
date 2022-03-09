@@ -1,23 +1,28 @@
-## eety - SSH to roaming machine
+# sshrew - Simple reverse SSH
 
-The core of `eety` is `ssh -R`, doing a remote forward initiated from 
-a roaming client to a remote server.  Once the session runs, the client
-can be ssh'd to from the server.
+The code in this repository is a simple solution to the problem _how do I
+ssh to a roaming machine, without dynamic DNS or port forwarding?_
 
+The core of the solution is to do a remote forward initiated from the
+roaming client to a known server (under your control).  Once the session
+runs, the client can then be ssh'd from the server.
+
+This works regardless of how the client is connected to the internet,
+as long as it can ssh out to your server.
 
 ### Server side
 
-Create the eety user and restrict its home
+Create the sshrew user and restrict its home
 
-    sudo adduser --system --shell /bin/sh --home /var/lib/eety --gecos "Eety Server" eety
-    sudo -u eety chmod 0750 /var/lib/eety
+    sudo adduser --system --shell /bin/sh --home /var/lib/sshrew --gecos "SSH Reverse Server" sshrew
+    sudo -u sshrew chmod 0750 /var/lib/sshrew
 
 Set up SSH login with the client's public key (see above)
 
-    sudo -u eety mkdir /var/lib/eety/.ssh
-    sudo -u eety chmod 0700 /var/lib/eety/.ssh
-    sudo -u eety touch /var/lib/eety/.ssh/authorized_keys
-    sudo -u eety chmod 0600 /var/lib/eety/.ssh/authorized_keys
+    sudo -u sshrew mkdir /var/lib/sshrew/.ssh
+    sudo -u sshrew chmod 0700 /var/lib/sshrew/.ssh
+    sudo -u sshrew touch /var/lib/sshrew/.ssh/authorized_keys
+    sudo -u sshrew chmod 0600 /var/lib/sshrew/.ssh/authorized_keys
 
 ### Client (roaming) side
 
@@ -34,51 +39,51 @@ Edit the `client/ssh.conf` file, replacing
  * `{LOCAL_HOST}`: the local host which will be forwarded (usually `localhost`)
  * `{LOCAL_PORT}`: the port on the local host to be forwarded (normally `22`) 
 
-Install the eety client files in `/usr/local/lib/eety`
+Install the sshrew client files in `/usr/local/lib/sshrew`
 
-    sudo install -d /usr/local/lib/eety
-    sudo install -m 644 -t /usr/local/lib/eety client/eety.service
-    sudo install -m 640 -t /usr/local/lib/eety client/ssh.conf
+    sudo install -d /usr/local/lib/sshrew
+    sudo install -m 644 -t /usr/local/lib/sshrew client/sshrew.service
+    sudo install -m 640 -t /usr/local/lib/sshrew client/ssh.conf
 
 Generate the SSH key for server login
 
-    sudo install -m 0700 -d /usr/local/lib/eety/keys
-    sudo ssh-keygen -C eety@$(hostname -s) -t ed25519 -f /usr/local/lib/eety/keys/id_eety -N ''
+    sudo install -m 0700 -d /usr/local/lib/sshrew/keys
+    sudo ssh-keygen -C sshrew@$(hostname -s) -t ed25519 -f /usr/local/lib/sshrew/keys/id_sshrew -N ''
 
 Echo the public key so you can copy it on the server (see below)
 
-    sudo cat /usr/local/lib/eety/keys/id_eety.pub
+    sudo cat /usr/local/lib/sshrew/keys/id_sshrew.pub
 
 ### Server side 
 
-Append the public key to the eety user's authorised keys:
+Append the public key to the sshrew user's authorised keys:
 
     echo "PUT THE KEY HERE" |
-    sudo -u eety tee -a /var/lib/eety/.ssh/authorized_keys
+    sudo -u sshrew tee -a /var/lib/sshrew/.ssh/authorized_keys
 
 ### Client side
 
 Once the above is done, we test access from the client.
 
-    sudo ssh -F /usr/local/lib/eety/ssh.conf remotehost
+    sudo ssh -F /usr/local/lib/sshrew/ssh.conf remotehost
 
-This should give `sh: 1: /var/lib/eety/eety-home.sh: not found`,
+This should give `sh: 1: /var/lib/sshrew/sshrew-home.sh: not found`,
 which is good.  We now `scp` that script to the server:
 
-    sudo scp -F /usr/local/lib/eety/ssh.conf server/eety-home.sh remotehost:
+    sudo scp -F /usr/local/lib/sshrew/ssh.conf server/sshrew-home.sh remotehost:
 
 Now install and enable the service.
 
     sudo install -d /usr/local/lib/systemd/system
-    sudo install -t /usr/local/lib/systemd/system -m 0644 client/eety.service
+    sudo install -t /usr/local/lib/systemd/system -m 0644 client/sshrew.service
     sudo systemctl daemon-reload
 
-    sudo systemctl enable eety.service
-    sudo systemctl start eety.service
+    sudo systemctl enable sshrew.service
+    sudo systemctl start sshrew.service
 
 ### Server Side
 
-You should now on the server see a file `/var/lib/eety/connect.log`.
+You should now on the server see a file `/var/lib/sshrew/connect.log`.
 It shows the latest connections from the client(s), and the local port
 they 'mirroring' on.
 
