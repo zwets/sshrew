@@ -55,16 +55,15 @@ Set up SSH for the client with its public key
 
 ### Client side
 
-Once the above is done, test access from the client.
-
-    sudo ssh -F /usr/local/lib/sshrew/ssh.conf remotehost
-
-This should give `sh: 1: /var/lib/sshrew/entrypoint.sh: not found`,
-which is good.  We now `scp` that script to the server:
+Now copy the `entrypoint.sh` script to the server, using the autorisation
+we just set up in the `ssh.conf`:
 
     sudo scp -F /usr/local/lib/sshrew/ssh.conf server/entrypoint.sh remotehost:
 
-Finally, install and enable the service on the client.
+If that gave errors, go back and retrace your steps till it works.
+
+Finally, install and enable autostart for the service on the client.  This
+service will keep the connection running:
 
     sudo install -d /usr/local/lib/systemd/system
     sudo install -t /usr/local/lib/systemd/system -m 0644 client/sshrew.service
