@@ -4,25 +4,12 @@ The code in this repository is a simple solution to the problem _how do I
 ssh to a roaming machine, without dynamic DNS or port forwarding?_
 
 The core of the solution is to do a remote forward initiated from the
-roaming client to a known server (under your control).  Once the session
+roaming client to an SSH server under your control.  Once the session
 runs, the client can then be ssh'd from the server.
 
 This works regardless of how the client is connected to the internet,
 as long as it can ssh out to your server.
 
-### Server side
-
-Create the sshrew user and restrict its home
-
-    sudo adduser --system --shell /bin/sh --home /var/lib/sshrew --gecos "SSH Reverse Server" sshrew
-    sudo -u sshrew chmod 0750 /var/lib/sshrew
-
-Set up SSH login with the client's public key (see above)
-
-    sudo -u sshrew mkdir /var/lib/sshrew/.ssh
-    sudo -u sshrew chmod 0700 /var/lib/sshrew/.ssh
-    sudo -u sshrew touch /var/lib/sshrew/.ssh/authorized_keys
-    sudo -u sshrew chmod 0600 /var/lib/sshrew/.ssh/authorized_keys
 
 ### Client (roaming) side
 
@@ -37,12 +24,11 @@ Edit the `client/ssh.conf` file, replacing
  * `{SERVER_PORT}`: the port the remote SSH is listening on (normally `22`)
  * `{MIRROR_PORT}`: the forwarding port to open on the server (any above 1024)
  * `{LOCAL_HOST}`: the local host which will be forwarded (usually `localhost`)
- * `{LOCAL_PORT}`: the port on the local host to be forwarded (normally `22`) 
+ * `{LOCAL_PORT}`: the port on `LOCAL_HOST` to be forwarded (normally `22`) 
 
 Install the sshrew client files in `/usr/local/lib/sshrew`
 
     sudo install -d /usr/local/lib/sshrew
-    sudo install -m 644 -t /usr/local/lib/sshrew client/sshrew.service
     sudo install -m 640 -t /usr/local/lib/sshrew client/ssh.conf
 
 Generate the SSH key for server login
@@ -56,14 +42,20 @@ Echo the public key so you can copy it on the server (see below)
 
 ### Server side 
 
-Append the public key to the sshrew user's authorised keys:
+Create the sshrew user and (optionally) restrict its home
 
-    echo "PUT THE KEY HERE" |
-    sudo -u sshrew tee -a /var/lib/sshrew/.ssh/authorized_keys
+    sudo adduser --system --shell /bin/sh --home /var/lib/sshrew --gecos "SSH Reverse Server" sshrew
+    sudo -u sshrew chmod 0750 /var/lib/sshrew  # optional
+
+Set up SSH for the client with its public key
+
+    sudo install -o sshrew -m 0700 -d /var/lib/sshrew/.ssh
+    echo "PUT THE KEY HERE" | sudo -u sshrew tee -a /var/lib/sshrew/.ssh/authorized_keys
+    sudo -u sshrew chmod 0600 /var/lib/sshrew/.ssh/authorized_keys
 
 ### Client side
 
-Once the above is done, we test access from the client.
+Once the above is done, test access from the client.
 
     sudo ssh -F /usr/local/lib/sshrew/ssh.conf remotehost
 
@@ -72,7 +64,7 @@ which is good.  We now `scp` that script to the server:
 
     sudo scp -F /usr/local/lib/sshrew/ssh.conf server/entrypoint.sh remotehost:
 
-Now install and enable the service.
+Finally, install and enable the service on the client.
 
     sudo install -d /usr/local/lib/systemd/system
     sudo install -t /usr/local/lib/systemd/system -m 0644 client/sshrew.service
@@ -84,13 +76,17 @@ Now install and enable the service.
 ### Server Side
 
 You should now on the server see a file `/var/lib/sshrew/connect.log`.
-It shows the latest connections from the client(s), and the local port
-they 'mirroring' on.
 
-To now login to the client, do
+    cat /var/lib/sshrew/connect.log
 
-    ssh -p {MIRROR_PORT} 127.0.0.1   # it is on the localhost
+It shows the latest connections from the client, and the local port it
+is forwarding to itself.  You can add more clients, as long as you pick
+a unique mirror port for each.
 
-And this should give you the login on the roaming client.
+To login to the client, on the server connect to the mirror port on
+localhost that is being reverse forwarded by the client:
 
+    ssh -p {MIRROR_PORT} 127.0.0.1
+
+And this should give you a login prompt on the roaming client.
 
