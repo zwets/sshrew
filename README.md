@@ -10,6 +10,7 @@ runs, the client can then be ssh'd from the server.
 This works regardless of how the client is connected to the internet,
 as long as it can ssh out to your server.
 
+## Steps
 
 ### Client (roaming) side
 
@@ -88,4 +89,14 @@ localhost that is being reverse forwarded by the client:
     ssh -p {MIRROR_PORT} 127.0.0.1
 
 And this should give you a login prompt on the roaming client.
+
+
+## Security Concerns
+
+This setup grants passwordless login on the server to the clients, so the
+client machines should be trusted.  Access by any client can be revoked by
+removing its public key from `/var/lib/sshrew/.ssh/authorized_keys`.
+
+For extra security, you could consider giving the `sshrew` user a restricted
+shell.
 
