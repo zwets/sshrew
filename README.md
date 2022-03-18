@@ -45,8 +45,10 @@ Echo the public key so you can copy it on the server (see below)
 
 Create the sshrew user and (optionally) restrict its home
 
-    sudo adduser --system --home /var/lib/sshrew --gecos "SSH Reverse Server" sshrew
-    # optional: sudo -u sshrew chmod 0750 /var/lib/sshrew
+    sudo adduser --system --shell /bin/sh --home /var/lib/sshrew --gecos "SSH Reverse Server" sshrew
+    # optional: 
+    sudo -u sshrew chmod 0750 /var/lib/sshrew
+
 Set up its authorized keys file with appropriate permissions
 
     sudo install -o sshrew -m 0700 -d /var/lib/sshrew/.ssh
@@ -72,16 +74,18 @@ to do.
        
 ### Client side
 
-Test the connection
+Test the connection:
 
     sudo ssh -TF /usr/local/lib/sshrew/ssh.conf remotehost
 
-This command should not return, and a line _{CLIENT} connected_ should
-appear in `/var/lib/sshrew/connect.log` on the server.  Abort the command
-with `Ctrl-C`, and within 30s a line _{CLIENT} disconnected_ should appear
-in the `connect.log`.
+This command should not return.  At the server side a _{CLIENT} listening_
+line should appear in `/var/lib/sshrew/connection.log`, as well as a file
+`{CLIENT}.port` containing the listening port number.
 
-If you get an error, retrace your steps until this works.
+Disconnect the session at the client side by pressing `Ctrl-C`.  Within 30s
+a line _{CLIENT} exiting_ should appear in the `connect.log`.
+
+If this did not happen, retrace your steps until this works.
 
 Finally, install and enable the `sshrew` service on the client.  This service
 will keep the connection running:
@@ -95,10 +99,10 @@ will keep the connection running:
 
 ### Server Side
 
-To login to any client, look in `/var/lib/sshrew/connect.log` to see whether
-it is connected and what mirror port it is listening on.  Then ssh to it:
+To login to any client, look up its port in `/var/lib/sshrew/{CLIENT}.port`,
+and ssh to it:
 
-    ssh -p {MIRROR_PORT} 127.0.0.1
+    ssh -p $(cat {CLIENT}.port) 127.0.0.1
 
 And this should give you a login prompt on the roaming client.
 
