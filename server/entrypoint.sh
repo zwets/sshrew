@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # This script is invoked by the remote client upon logging in,
 # passing it the host name and listening port.

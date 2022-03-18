@@ -14,7 +14,7 @@ as long as it can ssh out to your server.
 
 ### Client (roaming) side
 
-Make sure the client doesn't power down the WiFi.
+(Optional) make sure the client doesn't power down the WiFi.
 
     # /etc/NetworkManager/conf.d/default-wifi-powersave-on.conf
     wifi.powersave = 2
@@ -23,14 +23,14 @@ Edit the `client/ssh.conf` file, replacing
 
  * `{SERVER_HOST}`: the public name of the remote SSH server
  * `{SERVER_PORT}`: the port the remote SSH is listening on (normally `22`)
- * `{MIRROR_PORT}`: the forwarding port to open on the server (any above 1024)
+ * `{MIRROR_PORT}`: the forwarding port to open on the server (any free port above 1024)
  * `{LOCAL_HOST}`: the local host which will be forwarded (usually `localhost`)
  * `{LOCAL_PORT}`: the port on `LOCAL_HOST` to be forwarded (normally `22`) 
 
 Install the sshrew client files in `/usr/local/lib/sshrew`
 
     sudo install -d /usr/local/lib/sshrew
-    sudo install -m 640 -t /usr/local/lib/sshrew client/ssh.conf
+    sudo install -m 0640 -t /usr/local/lib/sshrew client/ssh.conf
 
 Generate the SSH key for server login
 
@@ -41,30 +41,50 @@ Echo the public key so you can copy it on the server (see below)
 
     sudo cat /usr/local/lib/sshrew/keys/id_sshrew.pub
 
-### Server side 
+### Server side (one time)
 
 Create the sshrew user and (optionally) restrict its home
 
-    sudo adduser --system --shell /bin/sh --home /var/lib/sshrew --gecos "SSH Reverse Server" sshrew
-    sudo -u sshrew chmod 0750 /var/lib/sshrew  # optional
-
-Set up SSH for the client with its public key
+    sudo adduser --system --home /var/lib/sshrew --gecos "SSH Reverse Server" sshrew
+    # optional: sudo -u sshrew chmod 0750 /var/lib/sshrew
+Set up its authorized keys file with appropriate permissions
 
     sudo install -o sshrew -m 0700 -d /var/lib/sshrew/.ssh
-    echo "PUT THE KEY HERE" | sudo -u sshrew tee -a /var/lib/sshrew/.ssh/authorized_keys
+    sudo -u sshrew touch /var/lib/sshrew/.ssh/authorized_keys
     sudo -u sshrew chmod 0600 /var/lib/sshrew/.ssh/authorized_keys
 
+Copy the entrypoint script to its home
+
+    sudo install -m 0755 -t /var/lib/sshrew server/entrypoint.sh
+
+### Server side (for every client)
+
+Authorise the client while restricting it to do only what it is supposed
+to do.
+
+    # Replace the {...} placeholders by the values set/obtained above
+    M="{MIRROR_PORT}"
+    C="{CLIENT_NAME}"
+    K="{FULL_PUBLIC_KEY_LINE_FROM_CLIENT}"
+
+    printf 'restrict,port-forwarding,permitlisten="localhost:%d",permitopen="localhost:%d",command="exec /var/lib/sshrew/entrypoint.sh %s %d" %s\n' \
+       $M $M "$C" $M "$K" | sudo -u sshrew tee -a /var/lib/sshrew/.ssh/authorized_keys
+       
 ### Client side
 
-Now copy the `entrypoint.sh` script to the server, using the autorisation
-we just set up in the `ssh.conf`:
+Test the connection
 
-    sudo scp -F /usr/local/lib/sshrew/ssh.conf server/entrypoint.sh remotehost:
+    sudo ssh -TF /usr/local/lib/sshrew/ssh.conf remotehost
 
-If that gave errors, go back and retrace your steps till it works.
+This command should not return, and a line _{CLIENT} connected_ should
+appear in `/var/lib/sshrew/connect.log` on the server.  Abort the command
+with `Ctrl-C`, and within 30s a line _{CLIENT} disconnected_ should appear
+in the `connect.log`.
 
-Finally, install and enable autostart for the service on the client.  This
-service will keep the connection running:
+If you get an error, retrace your steps until this works.
+
+Finally, install and enable the `sshrew` service on the client.  This service
+will keep the connection running:
 
     sudo install -d /usr/local/lib/systemd/system
     sudo install -t /usr/local/lib/systemd/system -m 0644 client/sshrew.service
@@ -75,28 +95,10 @@ service will keep the connection running:
 
 ### Server Side
 
-You should now on the server see a file `/var/lib/sshrew/connect.log`.
-
-    cat /var/lib/sshrew/connect.log
-
-It shows the latest connections from the client, and the local port it
-is forwarding to itself.  You can add more clients, as long as you pick
-a unique mirror port for each.
-
-To login to the client, on the server connect to the mirror port on
-localhost that is being reverse forwarded by the client:
+To login to any client, look in `/var/lib/sshrew/connect.log` to see whether
+it is connected and what mirror port it is listening on.  Then ssh to it:
 
     ssh -p {MIRROR_PORT} 127.0.0.1
 
 And this should give you a login prompt on the roaming client.
-
-
-## Security Concerns
-
-This setup grants passwordless login on the server to the clients, so the
-client machines should be trusted.  Access by any client can be revoked by
-removing its public key from `/var/lib/sshrew/.ssh/authorized_keys`.
-
-For extra security, you could consider giving the `sshrew` user a restricted
-shell.
 

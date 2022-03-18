@@ -4,7 +4,7 @@ After=network-online.target
 Wants=network-online.target ssh.service
 
 [Service]
-ExecStart=/usr/bin/ssh -F /usr/local/lib/sshrew/ssh.conf remotehost
+ExecStart=/usr/bin/ssh -TF /usr/local/lib/sshrew/ssh.conf remotehost
 Restart=always
 RestartSec=45
 
