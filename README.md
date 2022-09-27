@@ -29,12 +29,12 @@ Edit the `client/ssh.conf` file, replacing
 
 Install the sshrew client files in `/usr/local/lib/sshrew`
 
-    sudo install -d /usr/local/lib/sshrew
+    sudo install -d /usr/local/lib/sshrew &&
     sudo install -m 0640 -t /usr/local/lib/sshrew client/ssh.conf
 
 Generate the SSH key for server login
 
-    sudo install -m 0700 -d /usr/local/lib/sshrew/keys
+    sudo install -m 0700 -d /usr/local/lib/sshrew/keys &&
     sudo ssh-keygen -C sshrew@$(hostname -s) -t ed25519 -f /usr/local/lib/sshrew/keys/id_sshrew -N ''
 
 Echo the public key so you can copy it on the server (see below)
@@ -90,11 +90,10 @@ If this did not happen, retrace your steps until this works.
 Finally, install and enable the `sshrew` service on the client.  This service
 will keep the connection running:
 
-    sudo install -d /usr/local/lib/systemd/system
-    sudo install -t /usr/local/lib/systemd/system -m 0644 client/sshrew.service
-    sudo systemctl daemon-reload
-
-    sudo systemctl enable sshrew.service
+    sudo install -d /usr/local/lib/systemd/system &&
+    sudo install -t /usr/local/lib/systemd/system -m 0644 client/sshrew.service &&
+    sudo systemctl daemon-reload &&
+    sudo systemctl enable sshrew.service &&
     sudo systemctl start sshrew.service
 
 ### Server Side
