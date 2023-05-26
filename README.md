@@ -22,10 +22,10 @@ as long as it can ssh out to your server.
 Edit the `client/ssh.conf` file, replacing
 
  * `{SERVER_HOST}`: the public name of the remote SSH server
- * `{SERVER_PORT}`: the port the remote SSH is listening on (normally `22`)
- * `{MIRROR_PORT}`: the forwarding port to open on the server (any free port above 1024)
- * `{LOCAL_HOST}`: the local host which will be forwarded (usually `localhost`)
- * `{LOCAL_PORT}`: the port on `LOCAL_HOST` to be forwarded (normally `22`) 
+ * `{SERVER_PORT}`: the public port the remote SSH is listening on (normally `22`)
+ * `{MIRROR_PORT}`: the forwarding port to open locally on the server (any free port above 1024)
+ * `{LOCAL_HOST}`: the roaming host which will be forwarded to (usually `localhost`)
+ * `{LOCAL_PORT}`: the port on `LOCAL_HOST` to be forwarded to (normally `22`) 
 
 Install the sshrew client files in `/usr/local/lib/sshrew`
 
