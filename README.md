@@ -105,3 +105,12 @@ and ssh to it:
 
 And this should give you a login prompt on the roaming client.
 
+To save yourself from having to pass the `-p ...` option, you could add a
+stanza to your `~/.ssh/config` on the server:
+
+    Host {CLIENT_NAME}
+        Hostname localhost
+        Port {MIRROR_PORT}
+
+With this in place, you can simply `ssh {CLIENT_NAME}`.
+
