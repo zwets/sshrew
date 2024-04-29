@@ -55,15 +55,19 @@ fi
 echo "$$" >"$PID_FILE"
 echo "$PORT" >"$PORT_FILE"
 
-# Log state
-nc -z 127.0.0.1 $PORT && log "+++ $CLIENT listening on $PORT [$$]"
+# Log state; note stderr is echoed on the client
+nc -z 127.0.0.1 $PORT 2>/dev/null &&
+    log "+++ $CLIENT listening on $PORT [$$]" &&
+    echo "sshrew: reverse tunnel is ready" >&2 ||
+    echo "sshrew: failed to ping self through reverse tunnel" >&2
 
 # Loop sleeping and checking
-while nc -z 127.0.0.1 $PORT; do 
+while nc -z 127.0.0.1 $PORT 2>/dev/null; do 
     /usr/bin/sleep $INTERVAL
 done
 
 # No longer connected
+echo "sshrew: exiting server, cannot reach self through tunnel" >&2
 log "--- $CLIENT not reachable on $PORT [$$]" >>"$LOG_FILE"
 
 exit 0
