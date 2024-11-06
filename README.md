@@ -93,8 +93,7 @@ will keep the connection running:
     sudo install -d /usr/local/lib/systemd/system &&
     sudo install -t /usr/local/lib/systemd/system -m 0644 client/sshrew.service &&
     sudo systemctl daemon-reload &&
-    sudo systemctl enable sshrew.service &&
-    sudo systemctl start sshrew.service
+    sudo systemctl enable --now sshrew.service
 
 ### Server Side
 
