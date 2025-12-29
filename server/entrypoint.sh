@@ -68,6 +68,6 @@ done
 
 # No longer connected
 echo "sshrew: exiting server, cannot reach self through tunnel" >&2
-log "--- $CLIENT not reachable on $PORT [$$]" >>"$LOG_FILE"
+log "--- $CLIENT not reachable on $PORT [$$]"
 
 exit 0
